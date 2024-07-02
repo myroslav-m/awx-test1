@@ -1,0 +1,30 @@
+---
+- name: "Playbook to restart VM @ vCenter"
+  hosts: all
+  gather_facts: no
+
+
+  tasks:
+    - name: "Check if all vars are set"
+      assert:
+        that:
+          - vcenter_hostname is defined
+          - vcenter_username is defined
+          - vcenter_password is defined
+          
+    - name: "Restart guest OS (this won't wait for completion) for '{{ vm_name | default(inventory_hostname) }}'"
+      vmware_guest_powerstate:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs if vcenter_validate_certs is defined else 'no'|bool }}"
+        #moid: "{{ moid }}"
+        moid: "{{ VMID_in_vCenter | default(hostvars[inventory_hostname]['VMID_in_vCenter']) }}"
+        state: reboot-guest
+      delegate_to: localhost
+      register: results_Reboot
+
+    - debug:
+        var: results_Reboot
+        verbosity: 1
+      delegate_to: localhost
